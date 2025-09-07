@@ -53,24 +53,35 @@ function Cake3D({ candlesBlown }) {
   );
 }
 
-// 🌌 Night Sky with Stars
+// 🌌 Twinkling Stars
 function Stars() {
-  const ref = useRef();
-  const starPositions = React.useMemo(
+  const groupRef = useRef();
+  const stars = React.useMemo(
     () =>
-      Array.from({ length: 400 }).map(() => [
-        (Math.random() - 0.5) * 50,
-        Math.random() * 20 + 5,
-        (Math.random() - 0.5) * 50,
-      ]),
+      Array.from({ length: 200 }).map(() => ({
+        position: [
+          (Math.random() - 0.5) * 30,
+          Math.random() * 15 + 5,
+          (Math.random() - 0.5) * 30,
+        ],
+        size: Math.random() * 0.08 + 0.02,
+      })),
     []
   );
 
+  useFrame(() => {
+    if (groupRef.current) {
+      groupRef.current.children.forEach((star) => {
+        star.scale.setScalar(Math.random() * 0.5 + 0.5); // twinkle
+      });
+    }
+  });
+
   return (
-    <group ref={ref}>
-      {starPositions.map((pos, i) => (
-        <mesh key={i} position={pos}>
-          <sphereGeometry args={[0.05, 6, 6]} />
+    <group ref={groupRef}>
+      {stars.map((s, i) => (
+        <mesh key={i} position={s.position}>
+          <sphereGeometry args={[s.size, 8, 8]} />
           <meshBasicMaterial color="white" />
         </mesh>
       ))}
@@ -82,7 +93,7 @@ function Stars() {
 function ShootingStar() {
   const ref = useRef();
   const [active, setActive] = useState(false);
-  const [position, setPosition] = useState([
+  const [pos, setPos] = useState([
     Math.random() * 20 - 10,
     15,
     Math.random() * 20 - 10,
@@ -90,20 +101,20 @@ function ShootingStar() {
 
   useFrame(() => {
     if (active) {
-      ref.current.position[0] -= 0.4;
-      ref.current.position[1] -= 0.2;
+      ref.current.position[0] -= 0.5;
+      ref.current.position[1] -= 0.25;
       if (ref.current.position[1] < 0) setActive(false);
     } else {
       if (Math.random() < 0.003) {
-        setPosition([Math.random() * 20 - 10, 15, Math.random() * 20 - 10]);
+        setPos([Math.random() * 20 - 10, 15, Math.random() * 20 - 10]);
         setActive(true);
       }
     }
   });
 
   return (
-    <mesh ref={ref} position={position}>
-      <sphereGeometry args={[0.1, 8, 8]} />
+    <mesh ref={ref} position={pos}>
+      <sphereGeometry args={[0.12, 8, 8]} />
       <meshBasicMaterial color="yellow" />
     </mesh>
   );
@@ -133,9 +144,7 @@ function Balloon({ position, onPop }) {
     >
       <mesh>
         <sphereGeometry args={[0.3, 32, 32]} />
-        <meshStandardMaterial
-          color={`hsl(${Math.random() * 360}, 70%, 60%)`}
-        />
+        <meshStandardMaterial color={`hsl(${Math.random() * 360},70%,60%)`} />
       </mesh>
       <mesh position={[0, -0.5, 0]}>
         <cylinderGeometry args={[0.01, 0.01, 1, 8]} />
@@ -173,11 +182,7 @@ function FireworkParticle({ position }) {
       {Array.from({ length: 20 }).map((_, i) => (
         <mesh key={i}>
           <sphereGeometry args={[0.05, 8, 8]} />
-          <meshStandardMaterial
-            emissive="yellow"
-            emissiveIntensity={2}
-            color="orange"
-          />
+          <meshStandardMaterial emissive="yellow" emissiveIntensity={2} color="orange" />
         </mesh>
       ))}
     </group>
@@ -205,15 +210,9 @@ function ResponsiveCanvas({ children }) {
   const fov = size.width < 640 ? 65 : size.width < 1024 ? 55 : 50;
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-[45vh] sm:h-[55vh] md:h-[65vh] lg:h-[70vh] pointer-events-auto"
-    >
+    <div ref={containerRef} className="w-full h-[50vh] sm:h-[60vh] md:h-[70vh] lg:h-[75vh] pointer-events-auto">
       {size.width && size.height && (
-        <Canvas
-          style={{ width: "100%", height: "100%" }}
-          camera={{ position: [0, 3, 6], fov }}
-        >
+        <Canvas style={{ width: "100%", height: "100%" }} camera={{ position: [0, 3, 6], fov }}>
           <ambientLight intensity={0.6} />
           <directionalLight position={[5, 5, 5]} intensity={1} />
           {children}
@@ -277,13 +276,11 @@ export default function BirthdayWish() {
   }, [opened, candlesBlown]);
 
   const handlePop = (id) => {
-    setBalloons((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, popped: true } : b))
-    );
+    setBalloons((prev) => prev.map((b) => (b.id === id ? { ...b, popped: true } : b)));
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen w-screen bg-gradient-to-tr from-blue-900 via-purple-900 to-black relative overflow-hidden">
+    <div className="flex flex-col items-center justify-center h-screen w-screen bg-gradient-to-tr from-black via-blue-900 to-purple-900 relative overflow-hidden">
       {/* 🎵 Music */}
       <audio ref={audioRef} src="/audio/happybirthday.mp3" loop autoPlay />
 
@@ -335,11 +332,7 @@ export default function BirthdayWish() {
                   !b.popped && (
                     <Balloon
                       key={b.id}
-                      position={[
-                        Math.random() * 4 - 2,
-                        Math.random() * 2,
-                        Math.random() * 4 - 2,
-                      ]}
+                      position={[Math.random() * 4 - 2, Math.random() * 2, Math.random() * 4 - 2]}
                       onPop={() => handlePop(b.id)}
                     />
                   )
@@ -349,11 +342,7 @@ export default function BirthdayWish() {
                 Array.from({ length: 3 }).map((_, i) => (
                   <FireworkParticle
                     key={i}
-                    position={[
-                      Math.random() * 4 - 2,
-                      2 + i,
-                      Math.random() * 4 - 2,
-                    ]}
+                    position={[Math.random() * 4 - 2, 2 + i, Math.random() * 4 - 2]}
                   />
                 ))}
             </ResponsiveCanvas>
@@ -367,8 +356,8 @@ export default function BirthdayWish() {
                 >
                   Blow the candles 🎂
                 </motion.button>
-                <p className="mt-2 text-xs sm:text-sm sm:font-semibold text-gray-300">
-                  🎤 Phook maro mic mein 😉
+                <p className="mt-2 text-xs sm:text-sm sm:font-semibold text-gray-400">
+                  🎤 Mic mein phoonk maro 😉
                 </p>
               </>
             ) : (
