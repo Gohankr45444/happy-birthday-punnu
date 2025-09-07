@@ -1,19 +1,19 @@
 import React, { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import Confetti from "react-confetti";
-import { Gift, PartyPopper } from "lucide-react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Text3D, Center } from "@react-three/drei";
+import { motion, AnimatePresence } from "framer-motion";
+import Confetti from "react-confetti";
 import * as THREE from "three";
+import { Gift, PartyPopper } from "lucide-react";
 
-// 🍰 Cake Component
-function Cake3D({ candlesBlown, audioRef }) {
+// 🎂 Cake Component
+function Cake({ candlesBlown, audioRef }) {
   const candleRefs = useRef([]);
 
   useFrame(() => {
     if (audioRef.current) {
       const audio = audioRef.current;
-      const volume = audio.currentTime % 1; // simple periodic effect
+      const volume = audio.currentTime % 1;
       candleRefs.current.forEach((mesh, idx) => {
         if (mesh) mesh.scale.y = 1 + 0.2 * Math.sin(volume * 20 + idx);
       });
@@ -52,11 +52,7 @@ function Cake3D({ candlesBlown, audioRef }) {
           {!candlesBlown && (
             <mesh position={[0, 0.25, 0]}>
               <sphereGeometry args={[0.07, 16, 16]} />
-              <meshStandardMaterial
-                emissive="orange"
-                emissiveIntensity={2}
-                color="yellow"
-              />
+              <meshStandardMaterial emissive="orange" color="yellow" />
             </mesh>
           )}
         </group>
@@ -65,7 +61,7 @@ function Cake3D({ candlesBlown, audioRef }) {
   );
 }
 
-// 🎈 Interactive Balloon
+// 🎈 Balloon Component
 function Balloon({ position, onPop }) {
   const ref = useRef();
   const speed = 0.002 + Math.random() * 0.003;
@@ -104,35 +100,30 @@ function Balloon({ position, onPop }) {
 // 🌠 Shooting Star
 function ShootingStar() {
   const ref = useRef();
-  const [active, setActive] = useState(false);
-  const [pos, setPos] = useState([Math.random() * 6 - 3, 5, Math.random() * 6 - 3]);
+  const [active, setActive] = useState(true);
+  const pos = useRef([Math.random() * 6 - 3, 5, Math.random() * 6 - 3]);
   const speed = 0.05 + Math.random() * 0.03;
 
   useFrame(() => {
-    if (active && ref.current) {
+    if (ref.current && active) {
       ref.current.position.x += speed;
       ref.current.position.y -= speed / 2;
       if (ref.current.position.x > 6 || ref.current.position.y < -2) {
-        setActive(false);
-        setTimeout(() => {
-          setPos([Math.random() * 6 - 3, 5, Math.random() * 6 - 3]);
-          setActive(true);
-        }, 3000 + Math.random() * 3000);
+        ref.current.position.x = Math.random() * 6 - 3;
+        ref.current.position.y = 5;
       }
     }
   });
 
-  useEffect(() => setActive(true), []);
-
-  return active ? (
-    <mesh ref={ref} position={pos}>
-      <sphereGeometry args={[0.15, 8, 8]} />
+  return (
+    <mesh ref={ref} position={pos.current}>
+      <sphereGeometry args={[0.2, 8, 8]} />
       <meshStandardMaterial emissive="white" color="yellow" />
     </mesh>
-  ) : null;
+  );
 }
 
-// 🧁 Falling Cupcake
+// 🧁 Cupcake
 function Cupcake({ start }) {
   const ref = useRef();
   const [y, setY] = useState(start[1]);
@@ -155,18 +146,16 @@ function Cupcake({ start }) {
   );
 }
 
-// 🏷️ Floating Banner
-function BirthdayBanner() {
+// 🏷️ Banner
+function Banner() {
   const ref = useRef();
   useFrame(({ clock }) => {
-    if (ref.current) {
-      ref.current.rotation.z = 0.1 * Math.sin(clock.elapsedTime);
-    }
+    if (ref.current) ref.current.rotation.z = 0.1 * Math.sin(clock.elapsedTime);
   });
 
   return (
     <Center position={[0, 3.5, 0]}>
-      <Text3D ref={ref} font="/fonts/helvetiker_regular.typeface.json" size={0.4} height={0.05}>
+      <Text3D font="/fonts/helvetiker_regular.typeface.json" size={0.4} height={0.05} ref={ref}>
         Happy Birthday Punnu
         <meshStandardMaterial emissive="pink" color="#ff69b4" />
       </Text3D>
@@ -181,12 +170,8 @@ function ResponsiveCanvas({ children }) {
 
   useEffect(() => {
     const observer = new ResizeObserver(() => {
-      if (containerRef.current) {
-        setSize({
-          width: containerRef.current.offsetWidth,
-          height: containerRef.current.offsetHeight,
-        });
-      }
+      if (containerRef.current)
+        setSize({ width: containerRef.current.offsetWidth, height: containerRef.current.offsetHeight });
     });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
@@ -195,15 +180,9 @@ function ResponsiveCanvas({ children }) {
   const fov = size.width < 640 ? 65 : size.width < 1024 ? 55 : 50;
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-[45vh] sm:h-[55vh] md:h-[65vh] lg:h-[70vh] pointer-events-auto"
-    >
+    <div ref={containerRef} className="w-full h-[55vh] sm:h-[65vh] md:h-[75vh] lg:h-[80vh] pointer-events-auto">
       {size.width && size.height && (
-        <Canvas
-          style={{ width: "100%", height: "100%" }}
-          camera={{ position: [0, 3, 6], fov }}
-        >
+        <Canvas style={{ width: "100%", height: "100%" }} camera={{ position: [0, 3, 6], fov }}>
           <ambientLight intensity={0.6} />
           <directionalLight position={[5, 5, 5]} intensity={1} />
           {children}
@@ -226,10 +205,11 @@ export default function BirthdayWish() {
     if (opened && audioRef.current) audioRef.current.play().catch(() => {});
   }, [opened]);
 
+  // 🎤 Microphone detection
   useEffect(() => {
     if (!opened || candlesBlown) return;
-    let audioContext, analyser, dataArray, source;
 
+    let audioContext, analyser, dataArray, source;
     async function enableMic() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -237,14 +217,12 @@ export default function BirthdayWish() {
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
         dataArray = new Uint8Array(analyser.frequencyBinCount);
-
         source = audioContext.createMediaStreamSource(stream);
         source.connect(analyser);
 
         const checkVolume = () => {
           analyser.getByteFrequencyData(dataArray);
           let avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-
           if (avg > 60) {
             setCandlesBlown(true);
             stream.getTracks().forEach((track) => track.stop());
@@ -280,9 +258,7 @@ export default function BirthdayWish() {
           transition={{ type: "spring", duration: 1 }}
         >
           <Gift size={100} className="text-pink-600 drop-shadow-lg" />
-          <p className="mt-4 text-lg sm:text-xl font-semibold text-pink-700 animate-bounce">
-            Tap to open 🎁
-          </p>
+          <p className="mt-4 text-lg sm:text-xl font-semibold text-pink-700 animate-bounce">Tap to open 🎁</p>
         </motion.div>
       )}
 
@@ -298,21 +274,17 @@ export default function BirthdayWish() {
             <PartyPopper size={50} className="text-yellow-500 animate-spin-slow" />
 
             <ResponsiveCanvas>
-              <Cake3D candlesBlown={candlesBlown} audioRef={audioRef} />
-              <BirthdayBanner />
-
+              <Cake candlesBlown={candlesBlown} audioRef={audioRef} />
+              <Banner />
               {balloons.map((b) => (
                 <Balloon
                   key={b.id}
                   position={[Math.random() * 4 - 2, Math.random() * 2, Math.random() * 4 - 2]}
-                  onPop={() => {}}
                 />
               ))}
-
               {Array.from({ length: 5 }).map((_, i) => (
                 <ShootingStar key={i} />
               ))}
-
               {candlesBlown &&
                 Array.from({ length: 10 }).map((_, i) => (
                   <Cupcake key={i} start={[Math.random() * 4 - 2, 6, Math.random() * 4 - 2]} />
@@ -328,17 +300,15 @@ export default function BirthdayWish() {
                 >
                   Blow the candles 🎂
                 </motion.button>
-                <p className="mt-2 text-xs sm:text-sm text-gray-200">🎤 Mic mein phoonk maro 😉</p>
+                <p className="mt-2 text-xs sm:text-sm sm:font-semibold text-gray-300">🎤 Mic mein phoonk maro 😉</p>
               </>
             )}
 
             {candlesBlown && showMessage && (
               <motion.div
-                className="absolute top-1/4 bg-black/80 text-center p-6 rounded-lg"
+                className="absolute top-1/4 bg-black/70 text-center p-6 rounded-lg"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 1 }}
               >
                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-yellow-400 mb-4 animate-pulse">
                   ✨ Wishes Come True! ✨
