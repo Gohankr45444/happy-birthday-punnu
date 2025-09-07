@@ -53,26 +53,28 @@ function Cake3D({ candlesBlown }) {
   );
 }
 
-// 🌌 Twinkling Stars
-function Stars() {
+// 🌌 Falling Stars
+function FallingStars() {
   const groupRef = useRef();
   const stars = React.useMemo(
     () =>
-      Array.from({ length: 200 }).map(() => ({
+      Array.from({ length: 100 }).map(() => ({
         position: [
           (Math.random() - 0.5) * 30,
           Math.random() * 15 + 5,
           (Math.random() - 0.5) * 30,
         ],
-        size: Math.random() * 0.08 + 0.02,
+        speed: Math.random() * 0.02 + 0.005,
+        size: Math.random() * 0.15 + 0.05,
       })),
     []
   );
 
   useFrame(() => {
     if (groupRef.current) {
-      groupRef.current.children.forEach((star) => {
-        star.scale.setScalar(Math.random() * 0.5 + 0.5); // twinkle
+      groupRef.current.children.forEach((star, i) => {
+        star.position.y -= stars[i].speed;
+        if (star.position.y < 0) star.position.y = 15;
       });
     }
   });
@@ -93,31 +95,27 @@ function Stars() {
 function ShootingStar() {
   const ref = useRef();
   const [active, setActive] = useState(false);
-  const [pos, setPos] = useState([
-    Math.random() * 20 - 10,
-    15,
-    Math.random() * 20 - 10,
-  ]);
+  const [pos, setPos] = useState([Math.random() * 20 - 10, 15, Math.random() * 20 - 10]);
 
   useFrame(() => {
     if (active) {
-      ref.current.position[0] -= 0.5;
-      ref.current.position[1] -= 0.25;
+      ref.current.position[0] -= 0.6;
+      ref.current.position[1] -= 0.3;
       if (ref.current.position[1] < 0) setActive(false);
     } else {
-      if (Math.random() < 0.003) {
+      if (Math.random() < 0.004) {
         setPos([Math.random() * 20 - 10, 15, Math.random() * 20 - 10]);
         setActive(true);
       }
     }
   });
 
-  return (
+  return active ? (
     <mesh ref={ref} position={pos}>
       <sphereGeometry args={[0.12, 8, 8]} />
       <meshBasicMaterial color="yellow" />
     </mesh>
-  );
+  ) : null;
 }
 
 // 🎈 Floating Balloon
@@ -239,7 +237,6 @@ export default function BirthdayWish() {
   // 🎤 Microphone detection
   useEffect(() => {
     if (!opened || candlesBlown) return;
-
     let audioContext, analyser, dataArray, source;
 
     async function enableMic() {
@@ -250,7 +247,6 @@ export default function BirthdayWish() {
         analyser.fftSize = 256;
         const bufferLength = analyser.frequencyBinCount;
         dataArray = new Uint8Array(bufferLength);
-
         source = audioContext.createMediaStreamSource(stream);
         source.connect(analyser);
 
@@ -265,7 +261,6 @@ export default function BirthdayWish() {
             requestAnimationFrame(checkVolume);
           }
         };
-
         checkVolume();
       } catch (err) {
         console.warn("Mic access denied:", err);
@@ -323,10 +318,9 @@ export default function BirthdayWish() {
 
             {/* 3D Scene */}
             <ResponsiveCanvas>
-              <Stars />
+              <FallingStars />
               <ShootingStar />
               <Cake3D candlesBlown={candlesBlown} />
-
               {balloons.map(
                 (b) =>
                   !b.popped && (
@@ -337,7 +331,6 @@ export default function BirthdayWish() {
                     />
                   )
               )}
-
               {candlesBlown &&
                 Array.from({ length: 3 }).map((_, i) => (
                   <FireworkParticle
@@ -347,10 +340,11 @@ export default function BirthdayWish() {
                 ))}
             </ResponsiveCanvas>
 
+            {/* Candle Blow Button */}
             {!candlesBlown ? (
               <>
                 <motion.button
-                  className="mt-4 flex items-center gap-2 bg-pink-500 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-full shadow-lg hover:bg-pink-600 text-sm sm:text-base"
+                  className="mt-4 flex items-center gap-2 bg-pink-600 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-full shadow-lg hover:bg-pink-700 text-sm sm:text-base"
                   onClick={() => setCandlesBlown(true)}
                   whileTap={{ scale: 0.9 }}
                 >
