@@ -53,14 +53,14 @@ function Cake3D({ candlesBlown }) {
   );
 }
 
-// 🎇 Stars Background
+// 🌌 Night Sky with Stars
 function Stars() {
   const ref = useRef();
   const starPositions = React.useMemo(
     () =>
-      Array.from({ length: 500 }).map(() => [
+      Array.from({ length: 400 }).map(() => [
         (Math.random() - 0.5) * 50,
-        Math.random() * 25 + 2,
+        Math.random() * 20 + 5,
         (Math.random() - 0.5) * 50,
       ]),
     []
@@ -70,7 +70,7 @@ function Stars() {
     <group ref={ref}>
       {starPositions.map((pos, i) => (
         <mesh key={i} position={pos}>
-          <sphereGeometry args={[0.05, 8, 8]} />
+          <sphereGeometry args={[0.05, 6, 6]} />
           <meshBasicMaterial color="white" />
         </mesh>
       ))}
@@ -78,31 +78,31 @@ function Stars() {
   );
 }
 
-// 🌠 Shooting Star
+// 🌠 Shooting Stars
 function ShootingStar() {
   const ref = useRef();
-  const [reset, setReset] = useState(false);
+  const [active, setActive] = useState(false);
+  const [position, setPosition] = useState([
+    Math.random() * 20 - 10,
+    15,
+    Math.random() * 20 - 10,
+  ]);
 
-  useFrame(({ clock }) => {
-    if (!ref.current) return;
-    if (!reset) {
-      ref.current.position.x -= 0.3;
-      ref.current.position.y -= 0.15;
-      if (ref.current.position.y < 0) setReset(true);
+  useFrame(() => {
+    if (active) {
+      ref.current.position[0] -= 0.4;
+      ref.current.position[1] -= 0.2;
+      if (ref.current.position[1] < 0) setActive(false);
     } else {
-      if (Math.random() < 0.002) {
-        ref.current.position.set(
-          Math.random() * 20 - 10,
-          15,
-          Math.random() * 20 - 10
-        );
-        setReset(false);
+      if (Math.random() < 0.003) {
+        setPosition([Math.random() * 20 - 10, 15, Math.random() * 20 - 10]);
+        setActive(true);
       }
     }
   });
 
   return (
-    <mesh ref={ref} position={[Math.random() * 10, 10, 0]}>
+    <mesh ref={ref} position={position}>
       <sphereGeometry args={[0.1, 8, 8]} />
       <meshBasicMaterial color="yellow" />
     </mesh>
@@ -110,7 +110,7 @@ function ShootingStar() {
 }
 
 // 🎈 Floating Balloon
-function Balloon({ position }) {
+function Balloon({ position, onPop }) {
   const ref = useRef();
   const speed = 0.002 + Math.random() * 0.003;
   const sway = Math.random() * 0.5;
@@ -124,7 +124,13 @@ function Balloon({ position }) {
   });
 
   return (
-    <group ref={ref} position={position}>
+    <group
+      ref={ref}
+      position={position}
+      onClick={onPop}
+      onPointerDown={onPop}
+      style={{ cursor: "pointer" }}
+    >
       <mesh>
         <sphereGeometry args={[0.3, 32, 32]} />
         <meshStandardMaterial
@@ -157,7 +163,7 @@ function FireworkParticle({ position }) {
     if (ref.current) {
       ref.current.children.forEach((child, i) => {
         child.position.add(velocity.current[i]);
-        velocity.current[i].multiplyScalar(0.95); // slow down
+        velocity.current[i].multiplyScalar(0.95);
       });
     }
   });
@@ -178,7 +184,7 @@ function FireworkParticle({ position }) {
   );
 }
 
-// 📐 Responsive Canvas Wrapper
+// 📐 Responsive Canvas
 function ResponsiveCanvas({ children }) {
   const containerRef = useRef(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -222,12 +228,13 @@ function ResponsiveCanvas({ children }) {
 export default function BirthdayWish() {
   const [opened, setOpened] = useState(false);
   const [candlesBlown, setCandlesBlown] = useState(false);
+  const [balloons, setBalloons] = useState(
+    Array.from({ length: 6 }).map((_, i) => ({ id: i, popped: false }))
+  );
   const audioRef = useRef(null);
 
   useEffect(() => {
-    if (opened && audioRef.current) {
-      audioRef.current.play().catch(() => {});
-    }
+    if (opened && audioRef.current) audioRef.current.play().catch(() => {});
   }, [opened]);
 
   // 🎤 Microphone detection
@@ -251,7 +258,6 @@ export default function BirthdayWish() {
         const checkVolume = () => {
           analyser.getByteFrequencyData(dataArray);
           let avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-
           if (avg > 60) {
             setCandlesBlown(true);
             stream.getTracks().forEach((track) => track.stop());
@@ -270,15 +276,19 @@ export default function BirthdayWish() {
     enableMic();
   }, [opened, candlesBlown]);
 
+  const handlePop = (id) => {
+    setBalloons((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, popped: true } : b))
+    );
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center h-screen w-screen bg-gradient-to-tr from-pink-200 via-purple-200 to-blue-200 relative overflow-hidden">
-      {/* 🎵 Background Music (always mounted) */}
+    <div className="flex flex-col items-center justify-center h-screen w-screen bg-gradient-to-tr from-blue-900 via-purple-900 to-black relative overflow-hidden">
+      {/* 🎵 Music */}
       <audio ref={audioRef} src="/audio/happybirthday.mp3" loop autoPlay />
 
       {/* 🎊 Confetti */}
-      {opened && (
-        <Confetti width={window.innerWidth} height={window.innerHeight} />
-      )}
+      {opened && <Confetti width={window.innerWidth} height={window.innerHeight} />}
 
       {/* 🎁 Gift */}
       {!opened && (
@@ -290,50 +300,50 @@ export default function BirthdayWish() {
           transition={{ type: "spring", duration: 1 }}
         >
           <Gift size={100} className="text-pink-600 drop-shadow-lg" />
-          <p className="mt-4 text-lg sm:text-xl font-semibold text-pink-700 animate-bounce">
+          <p className="mt-4 text-lg sm:text-xl font-semibold text-pink-300 animate-bounce">
             Tap to open 🎁
           </p>
         </motion.div>
       )}
 
-      {/* 🎂 Birthday Scene */}
+      {/* 🎂 Cake Scene */}
       <AnimatePresence>
         {opened && (
           <motion.div
-            className="absolute flex flex-col items-center text-center p-4 sm:p-6 bg-white/80 rounded-2xl shadow-2xl backdrop-blur-md pointer-events-auto max-w-[95%] sm:max-w-lg"
+            className="absolute flex flex-col items-center text-center p-4 sm:p-6 bg-black/60 rounded-2xl shadow-2xl backdrop-blur-md pointer-events-auto max-w-[95%] sm:max-w-lg"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 1 }}
           >
-            <PartyPopper
-              size={50}
-              className="text-yellow-500 animate-spin-slow"
-            />
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-pink-600 mt-3">
+            <PartyPopper size={50} className="text-yellow-500 animate-spin-slow" />
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-yellow-300 mt-3">
               🎉 Happy Birthday Punnu 🎉
             </h1>
-            <p className="mt-2 text-sm sm:text-base md:text-lg text-gray-700">
-              Wishing you a day filled with love, laughter, and joy 💖
+            <p className="mt-2 text-sm sm:text-base md:text-lg text-gray-300">
+              Wishing you a dreamy night full of stars ✨
             </p>
 
-            {/* 🖼️ Cake + Balloons + Fireworks + Stars */}
+            {/* 3D Scene */}
             <ResponsiveCanvas>
               <Stars />
               <ShootingStar />
               <Cake3D candlesBlown={candlesBlown} />
 
-              {opened &&
-                Array.from({ length: 6 }).map((_, i) => (
-                  <Balloon
-                    key={i}
-                    position={[
-                      Math.random() * 4 - 2,
-                      Math.random() * 2,
-                      Math.random() * 4 - 2,
-                    ]}
-                  />
-                ))}
+              {balloons.map(
+                (b) =>
+                  !b.popped && (
+                    <Balloon
+                      key={b.id}
+                      position={[
+                        Math.random() * 4 - 2,
+                        Math.random() * 2,
+                        Math.random() * 4 - 2,
+                      ]}
+                      onPop={() => handlePop(b.id)}
+                    />
+                  )
+              )}
 
               {candlesBlown &&
                 Array.from({ length: 3 }).map((_, i) => (
@@ -348,7 +358,6 @@ export default function BirthdayWish() {
                 ))}
             </ResponsiveCanvas>
 
-            {/* Button / Candles Message */}
             {!candlesBlown ? (
               <>
                 <motion.button
@@ -358,17 +367,17 @@ export default function BirthdayWish() {
                 >
                   Blow the candles 🎂
                 </motion.button>
-                <p className="mt-2 text-xs sm:text-sm sm:font-semibold text-gray-600">
-                  🎤 Mic mein phoonk maro 😉
+                <p className="mt-2 text-xs sm:text-sm sm:font-semibold text-gray-300">
+                  🎤 Phook maro mic mein 😉
                 </p>
               </>
             ) : (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-lg sm:text-xl md:text-2xl text-orange-600 font-bold mt-4"
+                className="text-lg sm:text-xl md:text-2xl text-orange-400 font-bold mt-4"
               >
-                ✨ Candles blown! May your wishes come true ✨
+                ✨ Candles blown! Make a wish ✨
               </motion.div>
             )}
           </motion.div>
